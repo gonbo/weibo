@@ -11,13 +11,16 @@ http://lxyu.github.com/weibo/
 """
 
 import json
+import sys
 import time
 import urllib
+import logging
 
-import requests
+import  requests
 
 
 class Client(object):
+    session = requests.session()
     def __init__(self, api_key, api_secret, redirect_uri):
         # const define
         self.site = 'https://api.weibo.com/'
@@ -33,7 +36,6 @@ class Client(object):
         self.access_token = None
         self.expires_in = None
         self.uid = None
-        self.session = None
 
     def _get_token_by_code(self, authorization_code):
         params = {
@@ -44,9 +46,9 @@ class Client(object):
             'redirect_uri': self.redirect_uri
         }
 
-        response = requests.post(self.token_url, data=params)
+        response = Client.session.post(self.token_url, data=params, verify=False, config={'verbose':sys.stderr})
+        return response.json
 
-        return json.loads(response.content)
 
     @property
     def authorize_url(self):
@@ -81,7 +83,6 @@ class Client(object):
         tk = self._get_token_by_code(authorization_code)
         self.uid = tk['uid']
         self.expires_in = time.time() + int(tk['expires_in'])
-
         self.set_token(tk['access_token'])
 
     def set_token(self, access_token):
@@ -89,27 +90,31 @@ class Client(object):
         Directly activate client by access_token.
         """
         self.access_token = access_token
-        self.session = requests.session(
-            params={'access_token': self.access_token})
+        return
 
     def _assert_error(self, d):
         if 'error_code' in d and 'error' in d:
             raise RuntimeError("%s: %s" % (d['error_code'], d['error']))
+        return
 
     def get(self, uri, **kwargs):
         """
         Request resource by get method.
         """
         url = "%s%s.json" % (self.api_url, uri)
-        res = json.loads(self.session.get(url, params=kwargs).text)
-        self._assert_error(res)
-        return res
+        params = kwargs
+        params['access_token'] = self.access_token
+        result = Client.session.get(url,  params=kwargs,  verify=False, config={'verbose':sys.stderr}).json
+        self._assert_error(result)
+        return result
+
 
     def post(self, uri, **kwargs):
         """
         Request resource by post method.
         """
         url = "%s%s.json" % (self.api_url, uri)
-        res = json.loads(self.session.post(url, data=kwargs).text)
-        self._assert_error(res)
-        return res
+        params = {'access_token':self.access_token}
+        result =  Client.session.post(url, data=kwargs, params= params, verify=False, config={'verbose':sys.stderr}).json
+        self._assert_error(result)
+        return result
