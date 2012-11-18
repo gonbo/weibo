@@ -104,7 +104,7 @@ class Client(object):
         url = "%s%s.json" % (self.api_url, uri)
         params = kwargs
         params['access_token'] = self.access_token
-        result = Client.session.get(url,  params=kwargs,  verify=False, config={'verbose':sys.stderr}).json
+        result = Client.session.get(url,  params=params,  verify=False, config={'verbose':sys.stderr}).json
         self._assert_error(result)
         return result
 
