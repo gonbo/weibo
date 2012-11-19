@@ -21,6 +21,7 @@ import  requests
 
 class Client(object):
     session = requests.session()
+    session.verify = False
     def __init__(self, api_key, api_secret, redirect_uri):
         # const define
         self.site = 'https://api.weibo.com/'
