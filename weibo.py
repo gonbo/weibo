@@ -9,6 +9,27 @@ than the official SDK.
 For more info, refer to:
 http://lxyu.github.com/weibo/
 """
+# patch gevent socket.getaddrinfo
+try:
+    import gevent.socket as socket
+    origGetAddrInfo = socket.getaddrinfo
+
+    def getAddrInfoWrapper(host, port, family=0, socktype=0, proto=0, flags=0):
+        return origGetAddrInfo(host, port, socket.AF_INET, socktype, proto, flags)
+    # replace the original socket.getaddrinfo by our version
+    socket.getaddrinfo = getAddrInfoWrapper
+except:
+    pass
+
+# patch socket.getaddrinfo
+
+import socket
+origGetAddrInfo = socket.getaddrinfo
+
+def getAddrInfoWrapper(host, port, family=0, socktype=0, proto=0, flags=0):
+    return origGetAddrInfo(host, port, socket.AF_INET, socktype, proto, flags)
+# replace the original socket.getaddrinfo by our version
+socket.getaddrinfo = getAddrInfoWrapper
 
 import json
 import sys
@@ -22,6 +43,8 @@ import  requests
 class Client(object):
     session = requests.session()
     session.verify = False
+    session.config['verify']  = False
+    session.config['timeout'] = 600
     def __init__(self, api_key, api_secret, redirect_uri):
         # const define
         self.site = 'https://api.weibo.com/'
